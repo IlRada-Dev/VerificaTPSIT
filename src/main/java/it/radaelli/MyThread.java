@@ -36,7 +36,7 @@ public class MyThread implements Runnable {
             String line;
 
             while ((line = in.readLine()) != null) { //--ENDCOMMANDS or append
-                if (line.equals("ENDCOMMANDS")){};
+                if (line.equals("ENDCOMMANDS"))break;
                 clientInput.append(line).append("\n");
             }
 
