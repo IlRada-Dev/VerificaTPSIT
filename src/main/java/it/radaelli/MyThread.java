@@ -35,17 +35,17 @@ public class MyThread implements Runnable {
 
             String line;
 
-            while ((line = in.readLine()) != null) { //--ENDCOMMANDS
+            while ((line = in.readLine()) != null) { //--ENDCOMMANDS or append
                 if (line.equals("ENDCOMMANDS")){};
                 clientInput.append(line).append("\n");
             }
-            
+
             String[] commands = clientInput.toString().split("\n");//--split in commands
 
             for (String command : commands) { //--gestisci comandi
 
-                String[] parts = command.split(" ", 2);
-                String cmd = parts[0];
+                String[] parts = command.split(" ", 2);//--split in command and text 
+                String cmd = parts[0];//--command 
 
                 switch (cmd) {
 
@@ -86,12 +86,12 @@ public class MyThread implements Runnable {
                                 break;
                             }
                             int id = Integer.parseInt(parts[1]);
-                            int idx = findMessage(messageLog, id, autore);
+                            int idIndex = findMessage(messageLog, id, autore);
 
-                            if (idx == -1)
+                            if (idIndex == -1)
                                 responseBuilder.append("ERR NOT FOUND\n");
                             else {
-                                messageLog.remove(idx);
+                                messageLog.remove(idIndex);
                                 responseBuilder.append("OK DELETED ").append(id).append("\n");
                             }
                         } catch (NumberFormatException e) {
@@ -117,7 +117,7 @@ public class MyThread implements Runnable {
         }
     }
 
-    private static int findMessage(List<Messaggio> messageLog, int id, String user) {
+    private static int findMessage(List<Messaggio> messageLog, int id, String user) {//--Trova indice del messaggio in lista
         for (int i = 0; i < messageLog.size(); i++) {
             if (messageLog.get(i).id == id && messageLog.get(i).autore.equals(user)) {
                 return i;
