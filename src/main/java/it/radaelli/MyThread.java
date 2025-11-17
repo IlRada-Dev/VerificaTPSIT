@@ -20,81 +20,106 @@ public class MyThread implements Runnable {
 
     @Override
     public void run() {
+
         System.out.println("Un cliente si è collegato: " + socket.getInetAddress());
+
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 
             out.println("Welcome");
+
             String autore = "";
-            while (autore == "") {
-                String linea = in.readLine();
-                String[] parti = linea.split(" ", 2);
-                if (parti[0].equals("LOGIN")) {
-                    autore = parti[1];
-                    out.println("OK");
-                } else {
-                    out.println("ERR LOGINREQUIRED");
-                }
+            StringBuilder clientInput = new StringBuilder();
+            StringBuilder responseBuilder = new StringBuilder();
+
+            String line;
+
+            while ((line = in.readLine()) != null) { //--ENDCOMMANDS
+                if (line.equals("ENDCOMMANDS")){};
+                clientInput.append(line).append("\n");
             }
-            while (true) {
-                Messaggio currentMessage = new Messaggio(null, null);
-                String linea = in.readLine();
-                String[] parti = linea.split(" ", 2);
-                switch (parti[0]) {
+            
+            String[] commands = clientInput.toString().split("\n");//--split in commands
+
+            for (String command : commands) { //--gestisci comandi
+
+                String[] parts = command.split(" ", 2);
+                String cmd = parts[0];
+
+                switch (cmd) {
+
                     case "LOGIN":
-                        out.println("ERR LOGINREQUIRED");
+                        if (autore.equals("") && parts.length > 1) {
+                            autore = parts[1];
+                            responseBuilder.append("OK\n");
+                        } else {
+                            responseBuilder.append("ERR LOGINREQUIRED\n");
+                        }
                         break;
 
                     case "ADD":
-                        if (parti[1].equals(null)) {
-                            out.println("ERR SYNTAX");
-                        } else {
-                            currentMessage.autore = autore;
-                            currentMessage.testo = parti[1];
-                            messageLog.add(currentMessage);
-                            out.println("OK ADDED " + currentMessage.id);
+                        if (parts.length < 2) {
+                            responseBuilder.append("ERR SYNTAX\n");
+                            break;
                         }
+                        Messaggio m = new Messaggio(null, null);
+                        m.autore = autore;
+                        m.testo = parts[1];
+                        messageLog.add(m);
+                        responseBuilder.append("OK ADDED ").append(m.id).append("\n");
                         break;
+
                     case "LIST":
-                        for (int i = 0; i < messageLog.size(); i++) {
-                            out.println("[" + messageLog.get(i).id + "] " + messageLog.get(i).autore + ": "
-                                    + messageLog.get(i).testo);
+                        for (Messaggio msg : messageLog) {
+                            responseBuilder.append("[").append(msg.id).append("] ")
+                                    .append(msg.autore).append(": ")
+                                    .append(msg.testo).append("\n");
                         }
-                        out.println("END");
+                        responseBuilder.append("END\n");
                         break;
+
                     case "DEL":
                         try {
-                            int id = Integer.parseInt(parti[1]);
-
-                            int target = findMessage(messageLog, id, autore);
-                            if (target == -1) {
-                                out.println("ERR NOT FOUND");
-                            } else {
-                                messageLog.remove(target);
+                            if (parts.length < 2) {
+                                responseBuilder.append("ERR SYNTAX\n");
+                                break;
                             }
-                        } catch (NumberFormatException ex) {
-                            out.println("ERR SYNTAX");
+                            int id = Integer.parseInt(parts[1]);
+                            int idx = findMessage(messageLog, id, autore);
+
+                            if (idx == -1)
+                                responseBuilder.append("ERR NOT FOUND\n");
+                            else {
+                                messageLog.remove(idx);
+                                responseBuilder.append("OK DELETED ").append(id).append("\n");
+                            }
+                        } catch (NumberFormatException e) {
+                            responseBuilder.append("ERR SYNTAX\n");
                         }
                         break;
+
                     case "QUIT":
-                        out.println("BYE");
-                        socket.close();
+                        responseBuilder.append("BYE\n");
                         break;
 
                     default:
-                        out.println("ERR UNKNOWNCMD");
-                        break;
+                        responseBuilder.append("ERR UNKNOWNCMD\n");
                 }
             }
-        } catch (
-        Exception e) {
+
+            out.println(responseBuilder.toString()); //--print all responses
+
+            socket.close();
+
+        } catch (Exception e) {
+            e.printStackTrace(); 
         }
     }
 
-    private static int findMessage(List<Messaggio> messageLog, int id, String eliminatore) {
+    private static int findMessage(List<Messaggio> messageLog, int id, String user) {
         for (int i = 0; i < messageLog.size(); i++) {
-            if (messageLog.get(i).id == id && messageLog.get(i).autore == eliminatore) {
+            if (messageLog.get(i).id == id && messageLog.get(i).autore.equals(user)) {
                 return i;
             }
         }
